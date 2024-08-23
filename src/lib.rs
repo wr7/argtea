@@ -1,3 +1,7 @@
+mod help;
+
+pub use help::format_help;
+
 #[macro_export]
 macro_rules! impl_parse {
     {
@@ -168,7 +172,7 @@ macro_rules! _create_branch{
     {
         $iter:ident $string:ident ($($flag:literal)|+ $(, $param:ident)* $(,)? ) => $block:block
     } => {{
-        $(let $param = $iter.next();)+
+        $(let $param = $iter.next();)*
         $block
     }};
 }
