@@ -4,14 +4,20 @@ macro_rules! impl_parse {
         $flags:tt
         impl $ty:ident {
             $(
-                $vis:vis fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+                const $flags_name:ident = docs!();
+            )?
+            $(
+                fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
             )*
         }
     } => {
 
         impl $ty {
             $(
-                $vis fn $fn_name $args $(-> $ret_ty)? {
+                pub const $flags_name: &'static [$crate::Flag] = $crate::_docs!($flags);
+            )?
+            $(
+                pub fn $fn_name $args $(-> $ret_ty)? {
                     $crate::_scan_body!{
                         $flags $($body)*
                     }
@@ -19,6 +25,45 @@ macro_rules! impl_parse {
             )*
         }
     };
+}
+
+pub struct Flag {
+    pub doc: &'static [&'static str],
+    pub flags: &'static [&'static str],
+    pub params: &'static [&'static str],
+}
+
+/// Helper macro; corresponds to `docs!()`.
+///
+/// The argument corresponds to the flags given to `impl_parse`
+/// (before the `impl`)
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _docs {
+    {
+        {
+            $(
+                $(#[doc = $doc:literal])*
+                ($($flag:literal)|* $(,)? $($param:ident),* $(,)? ) => $block:block
+            ),* $(,)?
+        }
+    } => {
+        &[
+            $(
+                $crate::Flag {
+                    doc: &[
+                        $($doc,)*
+                    ],
+                    flags: &[
+                        $($flag,)*
+                    ],
+                    params: &[
+                        $(::core::stringify!($param),)*
+                    ],
+                },
+            )*
+        ]
+    }
 }
 
 /// Helper macro; corresponds to `parse!(iter)`.
