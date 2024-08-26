@@ -41,7 +41,10 @@ fn add_doccoments(buf: &mut String, docs: &[&str], indent_level: usize) {
     }
 }
 
-pub fn format_help(buf: &mut String, docs: &[Flag]) {
+/// More complicated runtime formatting of comandline options.
+///
+/// This will automatically trim whitespace, indent, and perform line wrapping.
+pub fn wrapping_format(buf: &mut String, docs: &[Flag]) {
     for flag in docs {
         if flag.flags.is_empty() {
             continue;
