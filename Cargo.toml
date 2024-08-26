@@ -2,3 +2,10 @@
 name = "argtea"
 version = "0.1.0"
 edition = "2021"
+
+description = "Declarative macro commandline parser (inspired by argwerk)"
+
+repository = "https://github.com/wr7/argtea"
+license = "MIT AND BSD-2-Clause"
+keywords = ["argument", "arguments", "arg", "cli", "parser"]
+categories = ["command-line-interface"]
