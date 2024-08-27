@@ -15,8 +15,8 @@ macro_rules! simple_format {
                 ],
                 flags: [
                     $(
-                        $first_flag:literal,
-                        $( $flag:literal ),*
+                        $first_flag:literal
+                        $( , $flag:literal )*
                     )?
                 ],
                 params: [

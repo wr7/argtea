@@ -377,16 +377,6 @@ macro_rules! _parse {
             }
         }
     };
-    {
-        $iter:expr => {
-            $(
-                $(#[doc = $doc:literal])*
-                ($($flag:literal)|* $(,)? $($param:ident),* $(,)? ) => $block:block
-            ),* $(,)?
-        }
-    } => {
-        compile_error!("The `parse` macro expects a mutable variable name and not an expression")
-    }
 }
 
 /// Recursive helper macro. This replaces occurances of `parse!()` with
@@ -411,6 +401,13 @@ macro_rules! _scan_body {
                 $($rem)+
             };
         )?
+    };
+    {
+        $flags:tt
+        parse! $args:tt;
+        $($($rem:tt)+)?
+    } => {
+        compile_error!("Invalid arguments to `parse!()` expected `parse!($identifier)`")
     };
     {
         $flags:tt
