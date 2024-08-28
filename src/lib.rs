@@ -30,19 +30,19 @@
 //!             eprintln!("{}", Self::HELP);
 //!
 //!             std::process::exit(0);
-//!         },
+//!         }
 //!
 //!         /// Sets the output file path.
 //!         ("--output" | "-o", output_path) => {
 //!             output_path_ = output_path;
-//!         },
+//!         }
 //!
 //!         /// Adds a file as an input.
 //!         ///
 //!         /// To input a file that starts with a `-`, prefix it with a `./`
 //!         (file) => {
 //!             files.push(file);
-//!         },
+//!         }
 //!     }
 //!
 //!     impl Arguments {
@@ -160,6 +160,9 @@
 //!   1. Runtime formatting
 //!   2. Formatting macros
 //!
+//! With either approach, if an item is annotated with `#[hidden]`, it will not
+//! be provided by `docs!()`.
+//!
 //! ## Runtime formatting
 //! Runtime formatters are just regular functions that take in [`&[argtea::Flag]`](Flag).
 //!
@@ -209,6 +212,9 @@
 //! }
 //! ```
 
+// TODO:
+// - Add support for specifying multiple flags at once (ie `-sw 80` being shorthand for `-s -w 80`)
+
 mod formatters;
 mod help;
 
@@ -230,7 +236,7 @@ macro_rules! argtea_impl {
 
         impl $ty {
             $(
-                pub const $constant_name: $constant_type = $crate::_constant_expression!($flags $($macro)::+ ! $mac_args);
+                pub const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _constant_expression!($($macro)::+ ! $mac_args));
             )*
             $(
                 pub fn $fn_name $args $(-> $ret_ty)? {
@@ -247,6 +253,44 @@ pub struct Flag {
     pub doc: &'static [&'static str],
     pub flags: &'static [&'static str],
     pub params: &'static [&'static str],
+}
+
+/// Helper macro: removes all `#[hidden]` flags and then calls the provided
+/// macro with the filtered flags as the first argument.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _filter_hidden_flags {
+    {
+        $(@pre_flags {$($pre_flags:tt)+})?
+        {}
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::$local_macro_to_call!({$($($pre_flags)+)?} $($other_args)*)
+    };
+
+    {
+        $(@pre_flags {$($pre_flags:tt)+})?
+        { #[hidden] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_hidden_flags! {
+            @pre_flags {$($($pre_flags)+)?}
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@pre_flags {$($pre_flags:tt)+})?
+        { $(#[doc = $cmnt:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_hidden_flags! {
+            @pre_flags {$($($pre_flags)+)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
 }
 
 /// Helper macro; parses the right-hand-side of `const` items
@@ -275,7 +319,7 @@ macro_rules! _constant_expression {
             $(
                 $(#[doc = $doc:literal])*
                 ($($flag:literal)|* $(,)? $($param:ident),* $(,)? ) => $block:block
-            ),* $(,)?
+            )*
         }
         $(@ pre_args: {$($pre_args:tt)+})?
         $($macro:ident)::+ ! (docs!() $($post_args:tt)*)
@@ -316,7 +360,7 @@ macro_rules! _constant_expression {
         $(@ pre_args: {$($pre_args:tt)+})?
         $($macro:ident)::+ ! ($($args:tt)*)
     } => {
-        $($macro:ident)::+ ! ($($args)*)
+        $($macro::ident)::+ ! ($($args)*)
     };
 }
 
@@ -332,7 +376,7 @@ macro_rules! _docs {
             $(
                 $(#[doc = $doc:literal])*
                 ($($flag:literal)|* $(,)? $($param:ident),* $(,)? ) => $block:block
-            ),* $(,)?
+            )*
         }
     } => {
         &[
@@ -364,8 +408,9 @@ macro_rules! _parse {
         $iter:ident => {
             $(
                 $(#[doc = $doc:literal])*
+                $(#[hidden])?
                 ($($pat:tt)+) => $block:block
-            ),* $(,)?
+            )*
         }
     } => {
         #[allow(unused_variables)]
