@@ -1,10 +1,21 @@
-Declarative macro commandline parser (inspired by argwerk).
+Declarative macro commandline parser (inspired by `argwerk`).
 
-The goal of argtea (pronounced arg tea) is to automatically generate help
-pages using doc comments. argtea attempts to be more flexible and less
-abstracted than argwerk.
+argtea attempts to reduce abstraction and maximize flexibility.
 
-Example project:
+## Comparison to argwerk
+
+|                                      | `argtea`  | `argwerk` |
+| :----------------------------------- | :-------: | :-------: |
+| Boilerplate                          | More      | Less      |
+| `--flag=value` syntax                | Yes       | No        |
+| `-sw 80` <=> `-s -w 80` syntax       | Yes       | No        |
+| OsString argument support            | No        | Yes       |
+| Customizable help message formatting | Yes       | Yes*      |
+| Help message generation              | Yes       | Yes*      |
+
+[*] At runtime
+
+## Example project
 ```rust
 use argtea::{argtea_impl, simple_format};
 
@@ -14,7 +25,7 @@ pub struct Arguments {
     files: Vec<String>,
 }
 
-fn main() -> Result<(), &'static str> {
+fn main() -> Result<(), String> {
     let args = Arguments::parse()?;
 
     println!("input files: {:?}", args.files);
@@ -41,6 +52,10 @@ argtea_impl! {
         ///
         /// To input a file that starts with a `-`, prefix it with a `./`
         (file) => {
+            if file.starts_with("-") {
+                return Err(format!("invalid flag `{file}`"));
+            }
+            
             files.push(file);
         }
     }
@@ -56,13 +71,11 @@ argtea_impl! {
             docs!()
         );
 
-        fn parse() -> Result<Self, &'static str> {
-            let mut args = std::env::args().skip(1);
-
+        fn parse() -> Result<Self, String> {
             let mut files = Vec::new();
             let mut output_path_ = None;
 
-            parse!(args);
+            parse!(std::env::args().skip(1));
 
             return Ok(Self {
                 files,

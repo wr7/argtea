@@ -33,21 +33,34 @@ macro_rules! _parse {
     } => {
         #[allow(unused_variables)]
         {
+            // For splitting flags like '-sw 80' => '-s -w 80'
             let mut flag_buf = String::new();
             let mut charview = $crate::parse::FlagView::new();
 
-            while let Some(flag) = if flag_buf.is_empty() {
-                    $iter.next().map(|s| ::std::borrow::Cow::from(s))
+            // Stores the value in `--flag=value`
+            let mut stashed_value = None;
+
+            while let Some(mut flag) = if flag_buf.is_empty() {
+                    $iter.next().map(::std::borrow::Cow::from)
                 } else {
                     Some(::std::borrow::Cow::from(&*charview.get(flag_buf.remove(0))))
                 }
             {
-
                 if flag.starts_with("-") && !flag.starts_with("--") && flag.chars().count() > 2 {
                     flag_buf = flag.into_owned();
                     flag_buf.remove(0);
                     continue;
                 }
+
+                if flag.starts_with("--") {
+                    if let Some(idx) = flag.find('=') {
+                        let flag = flag.to_mut();
+                        stashed_value = Some(flag.split_off(idx + 1));
+                        flag.pop();
+                    }
+                }
+
+                let mut $iter = stashed_value.take().into_iter().chain(&mut $iter);
 
                 match &*flag {
                     $(
@@ -142,7 +155,7 @@ macro_rules! _create_branch{
     {
         $iter:ident $string:ident ($ident:ident) => $block:block
     } => {{
-        let $ident = $string;
+        let $ident = $string.into_owned();
         $block
     }};
     {
