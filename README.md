@@ -30,19 +30,19 @@ argtea_impl! {
             eprintln!("{}", Self::HELP);
 
             std::process::exit(0);
-        },
+        }
 
         /// Sets the output file path.
         ("--output" | "-o", output_path) => {
             output_path_ = output_path;
-        },
+        }
 
         /// Adds a file as an input.
         ///
         /// To input a file that starts with a `-`, prefix it with a `./`
         (file) => {
             files.push(file);
-        },
+        }
     }
 
     impl Arguments {
