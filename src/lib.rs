@@ -9,6 +9,7 @@
 //! | Boilerplate                          | More      | Less      |
 //! | `--flag=value` syntax                | Yes       | No        |
 //! | `-sw 80` <=> `-s -w 80` syntax       | Yes       | No        |
+//! | `-Wall`  <=> `-W all` syntax         | Yes       | No        |
 //! | OsString argument support            | No        | Yes       |
 //! | Customizable help message formatting | Yes       | Yes*      |
 //! | Help message generation              | Yes       | Yes*      |
@@ -211,6 +212,9 @@ pub mod parse;
 
 pub use docs::Flag;
 pub use help::wrapping_format;
+
+#[cfg(test)]
+mod tests;
 
 #[macro_export]
 macro_rules! argtea_impl {

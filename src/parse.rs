@@ -60,7 +60,10 @@ macro_rules! _parse {
                     }
                 }
 
-                let mut $iter = stashed_value.take().into_iter().chain(&mut $iter);
+                let mut $iter = ::core::iter::from_fn(|| (!flag_buf.is_empty()).then_some(::core::mem::take(&mut flag_buf)))
+                    .chain(
+                        stashed_value.take().into_iter().chain(&mut $iter)
+                    );
 
                 match &*flag {
                     $(
