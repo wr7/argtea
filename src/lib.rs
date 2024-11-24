@@ -236,8 +236,11 @@ macro_rules! argtea_impl {
             )*
             $(
                 pub fn $fn_name $args $(-> $ret_ty)? {
-                    $crate::_scan_body!{
-                        $flags $($body)*
+                    $crate::_filter_fake_flags!{
+                        $flags
+                        _scan_body!(
+                            $($body)*
+                        )
                     }
                 }
             )*

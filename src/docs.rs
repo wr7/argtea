@@ -114,32 +114,32 @@ macro_rules! _constant_expression {
 #[macro_export]
 macro_rules! _filter_hidden_flags {
     {
-        $(@pre_flags {$($pre_flags:tt)+})?
+        $(@pre_flags {$($pre_flags:tt)*})?
         {}
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
-        $crate::$local_macro_to_call!({$($($pre_flags)+)?} $($other_args)*)
+        $crate::$local_macro_to_call!({$($($pre_flags)*)?} $($other_args)*)
     };
 
     {
-        $(@pre_flags {$($pre_flags:tt)+})?
+        $(@pre_flags {$($pre_flags:tt)*})?
         { #[hidden] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
         $crate::_filter_hidden_flags! {
-            @pre_flags {$($($pre_flags)+)?}
+            @pre_flags {$($($pre_flags)*)?}
             {$($remaining)*}
             $local_macro_to_call!($($other_args)*)
         }
     };
 
     {
-        $(@pre_flags {$($pre_flags:tt)+})?
-        { $(#[doc = $cmnt:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $(@pre_flags {$($pre_flags:tt)*})?
+        { $(#[fake])? $(#[doc = $cmnt:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
         $crate::_filter_hidden_flags! {
-            @pre_flags {$($($pre_flags)+)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
+            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
             {$($remaining)*}
             $local_macro_to_call!($($other_args)*)
         }

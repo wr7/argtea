@@ -15,6 +15,44 @@ impl FlagView {
     }
 }
 
+/// Helper macro: removes all `#[fake]` flags and then calls the provided
+/// macro with the filtered flags as the first argument.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _filter_fake_flags {
+    {
+        $(@pre_flags {$($pre_flags:tt)*})?
+        {}
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::$local_macro_to_call!({$($($pre_flags)*)?} $($other_args)*)
+    };
+
+    {
+        $(@pre_flags {$($pre_flags:tt)*})?
+        { #[fake] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_fake_flags! {
+            @pre_flags {$($($pre_flags)*)?}
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@pre_flags {$($pre_flags:tt)*})?
+        { $(#[hidden])? $(#[doc = $cmnt:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_fake_flags! {
+            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+}
+
 /// Helper macro; corresponds to `parse!(iter)`.
 ///
 /// The `=> {...}` argument corresponds to the flags given to [`argtea_impl`]

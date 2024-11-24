@@ -6,7 +6,10 @@ struct TestA {
 
 argtea_impl! {
     {
-        ("-a") => {}
+        #[hidden]
+        ("-a") => {
+            println!("a");
+        }
 
         ("--warning" | "-W", warning) => {
             let Some(warning) = warning else {
