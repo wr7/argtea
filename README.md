@@ -6,12 +6,12 @@ argtea attempts to reduce abstraction and maximize flexibility.
 
 |                                      | `argtea`  | `argwerk` |
 | :----------------------------------- | :-------: | :-------: |
-| Boilerplate                          | More      | Less      |
-| `--flag=value` syntax                | Yes       | No        |
-| `-sw 80` <=> `-s -w 80` syntax       | Yes       | No        |
-| OsString argument support            | No        | Yes       |
-| Customizable help message formatting | Yes       | Yes*      |
-| Help message generation              | Yes       | Yes*      |
+| `--flag=value` syntax                | ✓         | ✗         |
+| `-sw 80` <=> `-s -w 80` syntax       | ✓         | ✗         |
+| `-Wall`  <=> `-W all` syntax         | ✓         | ✗         |
+| OsString argument support            | ✗         | ✓         |
+| Customizable help message formatting | ✓         | ✓*        |
+| Help message generation              | ✓         | ✓*        |
 
 [*] At runtime
 

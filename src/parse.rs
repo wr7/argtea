@@ -30,7 +30,7 @@ macro_rules! _filter_fake_flags {
 
     {
         $(@pre_flags {$($pre_flags:tt)*})?
-        { #[fake] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        { $(#[doc = $cmnt1:literal])* #[fake] $(#[doc = $cmnt2:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
         $crate::_filter_fake_flags! {

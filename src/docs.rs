@@ -104,7 +104,7 @@ macro_rules! _constant_expression {
         $(@ pre_args: {$($pre_args:tt)+})?
         $($macro:ident)::+ ! ($($args:tt)*)
     } => {
-        $($macro::ident)::+ ! ($($args)*)
+        $($macro)::+ ! ($($args)*)
     };
 }
 
@@ -135,7 +135,7 @@ macro_rules! _filter_hidden_flags {
 
     {
         $(@pre_flags {$($pre_flags:tt)*})?
-        { $(#[fake])? $(#[doc = $cmnt:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        { $(#[fake])? $(#[doc = $cmnt:literal])* $(#[fake])? ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
         $crate::_filter_hidden_flags! {

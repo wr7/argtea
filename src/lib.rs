@@ -6,15 +6,14 @@
 //!
 //! |                                      | `argtea`  | `argwerk` |
 //! | :----------------------------------- | :-------: | :-------: |
-//! | Boilerplate                          | More      | Less      |
-//! | `--flag=value` syntax                | Yes       | No        |
-//! | `-sw 80` <=> `-s -w 80` syntax       | Yes       | No        |
-//! | `-Wall`  <=> `-W all` syntax         | Yes       | No        |
-//! | OsString argument support            | No        | Yes       |
-//! | Customizable help message formatting | Yes       | Yes*      |
-//! | Help message generation              | Yes       | Yes*      |
+//! | `--flag=value` syntax                | ✓         | ✗         |
+//! | `-sw 80` <=> `-s -w 80` syntax       | ✓         | ✗         |
+//! | `-Wall`  <=> `-W all` syntax         | ✓         | ✗         |
+//! | OsString argument support            | ✗         | ✓         |
+//! | Customizable help message formatting | ✓         | ✓*        |
+//! | Help message generation              | ✓         | ✓*        |
 //!
-//! [*] At runtime
+//! \[*\] At runtime
 //!
 //! ## Example project:
 //! ```rust
@@ -86,91 +85,83 @@
 //!     }
 //! }
 //! ```
-//!
-//! # Footguns
-//! Because argtea only uses declarative macros, it is somewhat limited and has
-//! a few footguns.
-//!
-//! ## Visibility
-//! Visibility cannot be specified inside of [`argtea_impl`] invokations.
-//! The following will NOT compile because `FLAGS` and `parse` are both
-//! declared as `pub`:
-//! ```compile_fail
-//! # use argtea::argtea_impl;
-//! # pub struct Foo;
-//! argtea_impl! {
-//!     {}
-//!     impl Foo {
-//!         pub const FLAGS: &'static [argtea::Flag] = docs!();
-//!         pub fn parse() {}
-//!     }
-//! }
-//! ```
-//! ## Constants
-//! The right-hand-side of an [`argtea_impl`] constant can only be a macro
-//! invokation. Additionally, the path to the macro cannot start with `::`.
-//!
-//! The following will not compile because the right-hand-side is not a macro
-//! invokation:
-//! ```compile_fail
-//! # use argtea::argtea_impl;
-//! # pub struct Foo;
-//! argtea_impl! {
-//!     {}
-//!     impl Foo {
-//!         const HELP: &'static str = "help message";
-//!     }
-//! }
-//! ```
-//!
 //! ## Functions
-//! `parse!()` invokations will not be processed if they are inside of a code
-//! block. Additionally, every statement MUST end with a semicolon (even if
-//! statements).
+//! Argtea functions are defined with syntax similar to regular rust functions. Note: unlike
+//! rust functions, visibility and generics cannot be specified. All argtea functions are `pub`
+//! regardless of how they're declared.
 //!
-//! The following will not compile because there is not a semicolon after the
-//! if statement and the `parse!()` invocation is in an if statement.
-//! ```compile_fail
-//! # use argtea::argtea_impl;
-//! # pub struct Foo;
-//! argtea_impl! {
-//!     {}
-//!     impl Foo {
-//!         fn parse(cond: bool) {
-//!             let mut args = std::env::args().skip(1);
-//!             if cond {
-//!                 parse!(args);
-//!             }
-//!         }
-//!     }
-//! }
-//! ```
+//! Argtea functions can use the `parse!()` macro which takes in a `String` iterator. It will then
+//! parse it using the flags and code defined above.
 //!
-//! # Formatting
-//! There are two approaches to formatting with argtea:
-//!   1. Runtime formatting
-//!   2. Formatting macros
+//! However, argtea functions have the following limitations:
+//! 1. ALL statements must be terminated by semicolons (even if statements and loops).
+//!     a. If you don't do this, you will get a cryptic compiler error.
+//! 2. `parse!()` invokations cannot be inside of code blocks (such as if statements).
 //!
-//! With either approach, if an item is annotated with `#[hidden]`, it will not
-//! be provided by `docs!()`.
+//! ## Constants
+//! There are two types of argtea constants:
+//! 1. Flag constants:
+//!   ```rust
+//!   # use argtea::argtea_impl;
+//!   # pub struct Foo;
+//!   argtea_impl! {
+//!       {/* ... */}
+//!       impl Foo {
+//!           const FLAGS: &'static [argtea::Flag] = docs!();
+//!       }
+//!   }
+//!   ```
+//! 2. Macro constants:
+//!   ```rust
+//!   # use argtea::{simple_format, argtea_impl};
+//!   # pub struct Foo;
+//!   argtea_impl! {
+//!       { /* ... */ }
+//!       impl Foo {
+//!           const HELP: &'static str = simple_format!("a" docs!() "b");
+//!       }
+//!   }
+//!   ```
 //!
-//! ## Runtime formatting
-//! Runtime formatters are just regular functions that take in [`&[argtea::Flag]`](Flag).
+//! The first type of constant generates an [`Flag`] for each non-`#[hidden]` flag. This can
+//! be used to generate help messages and other information at run-time.
 //!
-//! An [`&[argtea::Flag]`](Flag) slice can be obtained by adding a `docs!()` constant
-//! to the [`argtea_impl`] macro invokation. ie:
+//! Macro constants call macros with information about the non-`#[hidden]` flags. These can be used
+//! for compile-time help message generation. This crate provides the [`simple_format`] macro which
+//! provides simple, compile-time help message generation. For more information about formatting
+//! macros, see the "Formatting macros" section below.
+//!
+//! ## `#[hidden]` and `#[fake]`
+//!
+//! Flags can optionally be annotated with `#[hidden]` or `#[fake]`. `#[hidden]` hides a flag from
+//! the documentation while `#[fake]` shows a flag in the documentation that doesn't really exist.
+//!
+//! The following is an example where `#[fake]` and `#[hidden]` come in handy:
 //! ```rust
-//! # use argtea::argtea_impl;
-//! # pub struct Foo;
-//! argtea_impl! {
-//!     {/* ... */}
-//!     impl Foo {
-//!         const FLAGS: &'static [argtea::Flag] = docs!();
-//!     }
-//! }
+//! # use argtea::{argtea_impl, Flag};
+//! # struct Foo;
+//! # argtea_impl! {{
+//! /// Enables all warnings
+//! #[fake]
+//! ("-Wall") => {}
+//!
+//! // In this example, argtea interprets `-Wall` as `-W all`, so it will be matched to this flag.
+//! // This would be the case even if the above flag wasn't annotated with `#[fake]`
+//! //
+//! // However, the user may still wish to display `-Wall` as a separate flag in their documentation.
+//! ("-W" | "--warning", warning) => { /* ... */ }
+//!
+//! // This flag is just here for error handling (when the user passes in an invalid flag)
+//! // Therefore, this shouldn't be shown in the documentation
+//! #[hidden]
+//! (invalid_flag) => { /* ... */ }
+//! # }
+//! # impl Foo {
+//! # const a: &[Flag] = docs!();
+//! # fn foo() {parse!(None.into_iter());}
+//! # }
+//! # }
 //! ```
-//! Note: all of such constants are `pub`. Writing `pub const` will result in a
-//! compiler error.
 //!
 //! ## Formatting macros
 //! Formatting macros are just regular macros that take in the following pattern:
@@ -222,10 +213,10 @@ macro_rules! argtea_impl {
         $flags:tt
         impl $ty:ident {
             $(
-                const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
+                $(pub)? const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
             )*
             $(
-                fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+                $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
             )*
         }
     } => {
@@ -246,4 +237,34 @@ macro_rules! argtea_impl {
             )*
         }
     };
+
+    {
+        $flags:tt
+        impl $ty:ident {
+            $(
+                $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+            )*
+            $(
+                $(pub)? const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
+            )+
+            $(
+                $(pub)? fn $fn_name2:ident $args2:tt $(-> $ret_ty2:ty)? {$($body2:tt)*}
+            )*
+        }
+    } => {compile_error!("Argtea constants must be defined before functions")};
+
+    {
+        $flags:tt
+        impl $ty:ident {
+            $(
+                $(pub)? const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
+            )*
+            $(
+                $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+            )+
+            $(
+                $(pub)? const $constant_name2:ident: $constant_type2:ty = $($macro2:ident)::+ ! $mac_args2:tt;
+            )*
+        }
+    } => {compile_error!("Argtea constants must be defined before functions")};
 }
