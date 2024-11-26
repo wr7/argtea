@@ -9,3 +9,5 @@ repository = "https://github.com/wr7/argtea"
 license = "MIT AND BSD-2-Clause"
 keywords = ["argument", "arguments", "arg", "cli", "parser"]
 categories = ["command-line-interface"]
+
+include = ["/src", "/README.md"]
