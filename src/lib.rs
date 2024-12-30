@@ -211,22 +211,76 @@ mod tests;
 macro_rules! argtea_impl {
     {
         $flags:tt
-        impl $ty:ident {
-            $(
-                $(pub)? const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
-            )*
-            $(
-                $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
-            )*
-        }
+        impl $ty:ident {$($items:tt)*}
     } => {
 
         impl $ty {
-            $(
-                pub const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _constant_expression!($($macro)::+ ! $mac_args));
-            )*
-            $(
-                pub fn $fn_name $args $(-> $ret_ty)? {
+            $crate::_parse_items!{$flags {} $($items)*}
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _parse_items {
+    {
+        $flags:tt {$($prev:tt)*}
+    } => {
+        $($prev)*
+    };
+
+    // Add `pub` visibility if no visibility is specified
+    // (for backwards compatibility reasons)
+    {
+        $flags:tt {$($prev:tt)*}
+
+        $(#[$attr:meta])*
+        const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
+
+        $($rem:tt)*
+    } => {
+        $crate::_parse_items!{
+            $flags {$($prev)*}
+
+            $(#[$attr:meta])*
+            pub const $constant_name: $constant_type = $($macro)::+ ! $mac_args;
+
+            $($rem)*
+        }
+    };
+
+    {
+        $flags:tt {$($prev:tt)*}
+
+        $(#[$attr:meta])*
+        $vis:vis const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
+
+        $($rem:tt)*
+    } => {
+        $crate::_parse_items!{
+            $flags {
+                $($prev)*
+                $(#[$attr])*
+                $vis const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _constant_expression!($($macro)::+ ! $mac_args));
+            }
+            $($rem)*
+        }
+    };
+
+    {
+        $flags:tt {$($prev:tt)*}
+
+        $(#[$attr:meta])*
+        $(extern $abi:literal)?
+        $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+
+        $($rem:tt)*
+    } => {
+        $crate::_parse_items! {
+            $flags {
+                $($prev)*
+                $(#[$attr])*
+                pub $(extern $abi)? fn $fn_name $args $(-> $ret_ty)? {
                     $crate::_filter_fake_flags!{
                         $flags
                         _scan_body!(
@@ -234,37 +288,8 @@ macro_rules! argtea_impl {
                         )
                     }
                 }
-            )*
+            }
+            $($rem)*
         }
     };
-
-    {
-        $flags:tt
-        impl $ty:ident {
-            $(
-                $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
-            )*
-            $(
-                $(pub)? const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
-            )+
-            $(
-                $(pub)? fn $fn_name2:ident $args2:tt $(-> $ret_ty2:ty)? {$($body2:tt)*}
-            )*
-        }
-    } => {compile_error!("Argtea constants must be defined before functions")};
-
-    {
-        $flags:tt
-        impl $ty:ident {
-            $(
-                $(pub)? const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
-            )*
-            $(
-                $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
-            )+
-            $(
-                $(pub)? const $constant_name2:ident: $constant_type2:ty = $($macro2:ident)::+ ! $mac_args2:tt;
-            )*
-        }
-    } => {compile_error!("Argtea constants must be defined before functions")};
 }

@@ -78,6 +78,8 @@ macro_rules! _parse {
             // Stores the value in `--flag=value`
             let mut stashed_value = None;
 
+            #[allow(unused_labels)]
+            'stop_parsing:
             while let Some(mut flag) = if flag_buf.is_empty() {
                     $iter.next().map(::std::borrow::Cow::from)
                 } else {

@@ -25,7 +25,12 @@ argtea_impl! {
     }
 
     impl TestA {
-        fn parse(params: Vec<String>) -> TestA {
+        #[allow(unused)]
+        pub(self) const DOCS: &'static str = crate::simple_format!(docs!());
+
+        /// H
+        #[export_name = "TestA_parse"]
+        extern "Rust" fn parse(params: Vec<String>) -> TestA {
             let mut warning_ = None;
 
             parse!(params.into_iter());
