@@ -71,7 +71,7 @@ argtea_impl! {
             docs!()
         );
 
-        fn parse() -> Result<Self, String> {
+        pub fn parse() -> Result<Self, String> {
             let mut files = Vec::new();
             let mut output_path_ = None;
 

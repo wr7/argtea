@@ -71,7 +71,7 @@
 //!             docs!()
 //!         );
 //!
-//!         fn parse() -> Result<Self, String> {
+//!         pub fn parse() -> Result<Self, String> {
 //!             let mut files = Vec::new();
 //!             let mut output_path_ = None;
 //!
@@ -86,16 +86,20 @@
 //! }
 //! ```
 //! ## Functions
-//! Argtea functions are defined with syntax similar to regular rust functions. Note: unlike
-//! rust functions, visibility and generics cannot be specified. All argtea functions are `pub`
-//! regardless of how they're declared.
+//! Argtea functions are defined with syntax similar to regular Rust functions. Note: unlike Rust
+//! functions, generics cannot be specified.
+//!
+//! Additionally, if the visibility of a function isn't specified, it will automatically be declared
+//! as `pub`.
+//!
+//! *NOTE: this behavior will likely be changed in the future with a major version bump*.
 //!
 //! Argtea functions can use the `parse!()` macro which takes in a `String` iterator. It will then
 //! parse it using the flags and code defined above.
 //!
 //! However, argtea functions have the following limitations:
 //! 1. ALL statements must be terminated by semicolons (even if statements and loops).
-//!     a. If you don't do this, you will get a cryptic compiler error.
+//!     - **If you don't do this, you will get a cryptic compiler error.**
 //! 2. `parse!()` invokations cannot be inside of code blocks (such as if statements).
 //!
 //! ## Constants
@@ -107,7 +111,7 @@
 //!   argtea_impl! {
 //!       {/* ... */}
 //!       impl Foo {
-//!           const FLAGS: &'static [argtea::Flag] = docs!();
+//!           pub const FLAGS: &'static [argtea::Flag] = docs!();
 //!       }
 //!   }
 //!   ```
@@ -118,7 +122,7 @@
 //!   argtea_impl! {
 //!       { /* ... */ }
 //!       impl Foo {
-//!           const HELP: &'static str = simple_format!("a" docs!() "b");
+//!           pub const HELP: &'static str = simple_format!("a" docs!() "b");
 //!       }
 //!   }
 //!   ```
@@ -130,6 +134,43 @@
 //! for compile-time help message generation. This crate provides the [`simple_format`] macro which
 //! provides simple, compile-time help message generation. For more information about formatting
 //! macros, see the "Formatting macros" section below.
+//!
+//! ## `break`
+//! `break` can be used within a flag's code to immediately stop flag parsing. Additionally, the
+//! label `'stop_parsing` can be used if a nested break is required.
+//!
+//! This may be useful for implementing subcommands or `--`.
+//! ```rust
+//! # use argtea::{argtea_impl, Flag};
+//! # struct Foo {files: Vec<String>}
+//! argtea_impl! {
+//!     {
+//!         ("--do_something" | "-d") => { /* do something */ }
+//!
+//!         /// Interperets the remaining arguments as file names (even if they start with -)
+//!         ("--") => { break }
+//!
+//!         (file) => { files.push(file) }
+//!     }
+//!     impl Foo {
+//!       # const a: &[Flag] = docs!();
+//!         fn parse() -> Foo {
+//!             let mut files = Vec::new();
+//!
+//!             let mut args = std::env::args().skip(1);
+//!
+//!             parse!(args);
+//!
+//!             // Parse remaining arguments after `--`
+//!             for file in args {
+//!                 files.push(file);
+//!             };
+//!
+//!             return Self { files };
+//!         }
+//!     }
+//! }
+//! ```
 //!
 //! ## `#[hidden]` and `#[fake]`
 //!
@@ -180,6 +221,10 @@
 //!     }),*
 //! ]
 //! ```
+//! `argtea` itself contains the formatting macro [`simple_format`]. This macro isn't special in
+//! any way, and the user can define their own macro that functions similarly as long as the above
+//! criterion is met.
+//!
 //! When the following is written in the [`argtea_impl`] macro, the first
 //! `docs!()` parameter is replaced with the above pattern. Then, the
 //! [`simple_format`] macro is called:
