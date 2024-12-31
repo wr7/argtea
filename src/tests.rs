@@ -37,6 +37,10 @@ argtea_impl! {
 
             return TestA {warning: warning_};
         }
+
+        /// H2
+        #[export_name = "TestA_parse2"]
+        pub(self) extern "Rust" fn parse2() {}
     }
 }
 

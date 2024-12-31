@@ -294,6 +294,26 @@ macro_rules! _parse_items {
         }
     };
 
+    // Add `pub` visibility if no visibility is specified
+    // (for backwards compatibility reasons)
+    {
+        $flags:tt {$($prev:tt)*}
+
+        $(#[$attr:meta])*
+        $(extern $abi:literal)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+
+        $($rem:tt)*
+    } => {
+        $crate::_parse_items!{
+            $flags {$($prev)*}
+
+            $(#[$attr])*
+            pub $(extern $abi)? fn $fn_name $args $(-> $ret_ty)? {$($body)*}
+
+            $($rem)*
+        }
+    };
+
     {
         $flags:tt {$($prev:tt)*}
 
@@ -316,8 +336,7 @@ macro_rules! _parse_items {
         $flags:tt {$($prev:tt)*}
 
         $(#[$attr:meta])*
-        $(extern $abi:literal)?
-        $(pub)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
+        $vis:vis $(extern $abi:literal)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
 
         $($rem:tt)*
     } => {
