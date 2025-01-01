@@ -25,7 +25,7 @@ macro_rules! _filter_fake_flags {
         {}
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
-        $crate::$local_macro_to_call!({$($($pre_flags)*)?} $($other_args)*)
+        $crate::$local_macro_to_call!{{$($($pre_flags)*)?} $($other_args)*}
     };
 
     {
@@ -125,56 +125,64 @@ macro_rules! _parse {
 macro_rules! _scan_body {
     {
         $flags:tt
-        parse!($iter:ident);
-        $($($rem:tt)+)?
+        {$($already_parsed:tt)*}
+        parse!($iter:ident)
+        $($rem:tt)*
     } => {
-        $crate::_parse!{
-            $iter => $flags
+        $crate::_scan_body!{
+            $flags
+            {
+                $($already_parsed)*
+                $crate::_parse!{
+                    $iter => $flags
+                }
+            }
+            $($rem)*
         }
-        $(
-            $crate::_scan_body!{
-                $flags
-                $($rem)+
-            };
-        )?
     };
     {
         $flags:tt
-        parse!($expr:expr);
-        $($($rem:tt)+)?
+        {$($already_parsed:tt)*}
+        parse!($expr:expr)
+        $($rem:tt)*
     } => {
-        let mut args = $expr;
-        $crate::_parse!{
-            args => $flags
+        $crate::_scan_body!{
+            $flags
+            {
+                $($already_parsed)*
+                {
+                    let mut args = $expr;
+                    $crate::_parse!{
+                        args => $flags
+                    }
+                }
+            }
+            $($rem)*
         }
-        $(
-            $crate::_scan_body!{
-                $flags
-                $($rem)+
-            };
-        )?
     };
+
     {
         $flags:tt
-        parse! $args:tt;
-        $($($rem:tt)+)?
+        {$($already_parsed:tt)*}
+        parse! $args:tt
+        $($rem:tt)*
     } => {
         compile_error!("Invalid arguments to `parse!()` expected `parse!($expr)`")
     };
+
     {
         $flags:tt
-        $expr:stmt;
-        $($($rem:tt)+)?
+        {$($already_parsed:tt)*}
+        $expr:tt
+        $($rem:tt)*
     } => {
-        $expr
-        $(
-            $crate::_scan_body!{
-                $flags
-                $($rem)+
-            };
-        )?
+        $crate::_scan_body!{
+            $flags
+            {$($already_parsed)* $expr }
+            $($rem)*
+        }
     };
-    {$flags:tt} => {};
+    {$flags:tt {$($already_parsed:tt)*}} => {$($already_parsed)*};
 }
 
 #[doc(hidden)]

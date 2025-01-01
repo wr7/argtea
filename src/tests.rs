@@ -35,7 +35,7 @@ argtea_impl! {
 
             parse!(params.into_iter());
 
-            return TestA {warning: warning_};
+            TestA {warning: warning_}
         }
 
         /// H2

@@ -77,10 +77,10 @@
 //!
 //!             parse!(std::env::args().skip(1));
 //!
-//!             return Ok(Self {
+//!             Ok(Self {
 //!                 files,
 //!                 output_path: output_path_.unwrap_or_else(|| "a.out".to_owned())
-//!             });
+//!             })
 //!         }
 //!     }
 //! }
@@ -92,10 +92,7 @@
 //! Argtea functions can use the `parse!()` macro which takes in a `String` iterator. It will then
 //! parse it using the flags and code defined above.
 //!
-//! However, argtea functions have the following limitations:
-//! 1. ALL statements must be terminated by semicolons (even if statements and loops).
-//!     - **If you don't do this, you will get a cryptic compiler error.**
-//! 2. `parse!()` invokations cannot be inside of code blocks (such as if statements).
+//! NOTE: the `parse!()` macro cannot be used within code blocks.
 //!
 //! ## Constants
 //! There are two types of argtea constants:
@@ -159,9 +156,9 @@
 //!             // Parse remaining arguments after `--`
 //!             for file in args {
 //!                 files.push(file);
-//!             };
+//!             }
 //!
-//!             return Self { files };
+//!             Self { files }
 //!         }
 //!     }
 //! }
@@ -194,7 +191,7 @@
 //! # }
 //! # impl Foo {
 //! # const a: &[Flag] = docs!();
-//! # fn foo() {parse!(None.into_iter());}
+//! # fn foo() {parse!(None.into_iter())}
 //! # }
 //! # }
 //! ```
@@ -303,6 +300,7 @@ macro_rules! _parse_items {
                     $crate::_filter_fake_flags!{
                         $flags
                         _scan_body!(
+                            {}
                             $($body)*
                         )
                     }

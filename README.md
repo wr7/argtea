@@ -77,10 +77,10 @@ argtea_impl! {
 
             parse!(std::env::args().skip(1));
 
-            return Ok(Self {
+            Ok(Self {
                 files,
                 output_path: output_path_.unwrap_or_else(|| "a.out".to_owned())
-            });
+            })
         }
     }
 }
