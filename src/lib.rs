@@ -89,11 +89,6 @@
 //! Argtea functions are defined with syntax similar to regular Rust functions. Note: unlike Rust
 //! functions, generics cannot be specified.
 //!
-//! Additionally, if the visibility of a function isn't specified, it will automatically be declared
-//! as `pub`.
-//!
-//! *NOTE: this behavior will likely be changed in the future with a major version bump*.
-//!
 //! Argtea functions can use the `parse!()` macro which takes in a `String` iterator. It will then
 //! parse it using the flags and code defined above.
 //!
@@ -272,46 +267,6 @@ macro_rules! _parse_items {
         $flags:tt {$($prev:tt)*}
     } => {
         $($prev)*
-    };
-
-    // Add `pub` visibility if no visibility is specified
-    // (for backwards compatibility reasons)
-    {
-        $flags:tt {$($prev:tt)*}
-
-        $(#[$attr:meta])*
-        const $constant_name:ident: $constant_type:ty = $($macro:ident)::+ ! $mac_args:tt;
-
-        $($rem:tt)*
-    } => {
-        $crate::_parse_items!{
-            $flags {$($prev)*}
-
-            $(#[$attr:meta])*
-            pub const $constant_name: $constant_type = $($macro)::+ ! $mac_args;
-
-            $($rem)*
-        }
-    };
-
-    // Add `pub` visibility if no visibility is specified
-    // (for backwards compatibility reasons)
-    {
-        $flags:tt {$($prev:tt)*}
-
-        $(#[$attr:meta])*
-        $(extern $abi:literal)? fn $fn_name:ident $args:tt $(-> $ret_ty:ty)? {$($body:tt)*}
-
-        $($rem:tt)*
-    } => {
-        $crate::_parse_items!{
-            $flags {$($prev)*}
-
-            $(#[$attr])*
-            pub $(extern $abi)? fn $fn_name $args $(-> $ret_ty)? {$($body)*}
-
-            $($rem)*
-        }
     };
 
     {
