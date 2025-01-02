@@ -21,7 +21,10 @@ impl FlagView {
 #[macro_export]
 macro_rules! _filter_fake_flags {
     {
-        $(@pre_flags {$($pre_flags:tt)*})?
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake: $($fake:ident)?
+        })?
         {}
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
@@ -29,24 +32,119 @@ macro_rules! _filter_fake_flags {
     };
 
     {
-        $(@pre_flags {$($pre_flags:tt)*})?
-        { $(#[doc = $cmnt1:literal])* #[fake] $(#[doc = $cmnt2:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake: $($fake:ident)?
+        })?
+        {
+            #[fake]
+            $($remaining:tt)*
+        }
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
         $crate::_filter_fake_flags! {
-            @pre_flags {$($($pre_flags)*)?}
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                fake: true
+            }
             {$($remaining)*}
             $local_macro_to_call!($($other_args)*)
         }
     };
 
     {
-        $(@pre_flags {$($pre_flags:tt)*})?
-        { $(#[hidden])? $(#[doc = $cmnt:literal])* ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake: $($fake:ident)?
+        })?
+        {
+            #[hidden]
+            $($remaining:tt)*
+        }
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
         $crate::_filter_fake_flags! {
-            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                fake: $($($fake)?)?
+            }
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake: $($fake:ident)?
+        })?
+        {
+            #[doc = $cmt:literal]
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_fake_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                fake: $($($fake)?)?
+            }
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake: $($fake:ident)?
+        })?
+        {
+            #[$($attr:tt)*]
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        compile_error!(::core::concat!("Invalid flag attribute #[", ::core::stringify!($($attr)*), "]"))
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake: $fake:ident
+        })?
+        {
+            ($($lhs:tt)*) => $rhs:tt
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_fake_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                fake:
+            }
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            fake:
+        })?
+        {
+            ($($lhs:tt)*) => $rhs:tt
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_fake_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)? ($($lhs)*) => $rhs}
+                fake:
+            }
             {$($remaining)*}
             $local_macro_to_call!($($other_args)*)
         }

@@ -282,7 +282,7 @@ macro_rules! _parse_items {
             $flags {
                 $($prev)*
                 $(#[$attr])*
-                $vis const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _remove_flag_bindings!(_constant_expression!($($macro)::+ ! $mac_args)));
+                $vis const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _constant_expression!($($macro)::+ ! $mac_args));
             }
             $($rem)*
         }

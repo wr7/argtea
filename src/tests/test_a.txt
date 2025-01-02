@@ -1,0 +1,18 @@
+argtea test A
+  -Wall 
+    Enables all warnings
+
+
+  --warning, -W <warning> 
+    Enables a specific warning
+   
+    b
+
+
+  --weird-flag, -f <p> 
+
+
+  <other> 
+
+
+end

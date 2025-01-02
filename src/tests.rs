@@ -6,11 +6,27 @@ struct TestA {
 
 argtea_impl! {
     {
+        /// This will not be visible in the documentation
         #[hidden]
+        /// Neither will this
         ("-a") => {
             println!("a");
         }
 
+        /// This flag does not do anything and does not show up in documentation
+        #[fake]
+        #[hidden]
+        ("--fake-and-hidden") => {
+            compile_error!("Fake flags should not be compiled");
+        }
+
+        /// Enables all warnings
+        #[fake]
+        ("-Wall") => {}
+
+        /// Enables a specific warning
+        ///
+        /// b
         ("--warning" | "-W", warning) => {
             let Some(warning) = warning else {
                 panic!("expected parameter for warning flag")
@@ -34,7 +50,11 @@ argtea_impl! {
 
     impl TestA {
         #[allow(unused)]
-        pub(self) const DOCS: &'static str = crate::simple_format!(docs!());
+        pub const DOCS: &'static str = crate::simple_format!(
+            "argtea test A"
+            docs!()
+            "end"
+        );
 
         /// H
         #[export_name = "TestA_parse"]
@@ -62,6 +82,7 @@ fn test_a() {
         (&["-Wall"], "all"),
         (&["-aWall"], "all"),
         (&["-f", "abc"], "-f abc"),
+        (&["-fabc"], "-f abc"),
         (&["--weird-flag", "def"], "--weird-flag def"),
     ];
 
@@ -71,4 +92,11 @@ fn test_a() {
         let result = TestA::parse(args);
         assert_eq!(result.warning.as_deref(), Some(*expected));
     }
+}
+
+#[test]
+fn test_a_docs() {
+    const EXPECTED: &'static str = include_str!("tests/test_a.txt");
+
+    assert_eq!(TestA::DOCS, EXPECTED);
 }

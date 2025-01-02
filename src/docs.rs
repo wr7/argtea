@@ -114,7 +114,11 @@ macro_rules! _constant_expression {
 #[macro_export]
 macro_rules! _filter_hidden_flags {
     {
-        $(@pre_flags {$($pre_flags:tt)*})?
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $($hidden:ident)?
+        })?
         {}
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
@@ -122,86 +126,154 @@ macro_rules! _filter_hidden_flags {
     };
 
     {
-        $(@pre_flags {$($pre_flags:tt)*})?
-        { #[hidden] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
-        $local_macro_to_call:ident!($($other_args:tt)*)
-    } => {
-        $crate::_filter_hidden_flags! {
-            @pre_flags {$($($pre_flags)*)?}
-            {$($remaining)*}
-            $local_macro_to_call!($($other_args)*)
-        }
-    };
-
-    {
-        $(@pre_flags {$($pre_flags:tt)*})?
-        { $(#[fake])? $(#[doc = $cmnt:literal])* $(#[fake])? ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
-        $local_macro_to_call:ident!($($other_args:tt)*)
-    } => {
-        $crate::_filter_hidden_flags! {
-            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
-            {$($remaining)*}
-            $local_macro_to_call!($($other_args)*)
-        }
-    };
-}
-
-/// Helper macro: removes all 'flag_name @' from the lhs of all flag declarations and then calls the
-/// provided macro with the filtered flags as the first argument.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! _remove_flag_bindings {
-    {
-        {}
-        $(@pre_flags {$($pre_flags:tt)*})?
-        $local_macro_to_call:ident!($($other_args:tt)*)
-    } => {
-        $crate::$local_macro_to_call!{{$($($pre_flags)*)?} $($other_args)*}
-    };
-
-    {
-        { #[hidden] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
-        $(@pre_flags {$($pre_flags:tt)*})?
-        $local_macro_to_call:ident!($($other_args:tt)*)
-    } => {
-        $crate::_remove_flag_bindings! {
-            {$($remaining)*}
-            @pre_flags {$($($pre_flags)*)?}
-            $local_macro_to_call!($($other_args)*)
-        }
-    };
-
-    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $($hidden:ident)?
+        })?
         {
-            $(#[doc = $cmnt:literal])*
-            (
-                $variable_name:ident @ $($lhs:tt)*
-            ) => $rhs:tt
+            #[hidden]
             $($remaining:tt)*
         }
-        $(@pre_flags {$($pre_flags:tt)*})?
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
-        $crate::_remove_flag_bindings! {
+        $crate::_filter_hidden_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                attrs: {$($($attrs)*)?}
+                hidden: true
+            }
             {$($remaining)*}
-            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
             $local_macro_to_call!($($other_args)*)
         }
     };
 
     {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $($hidden:ident)?
+        })?
         {
-            $(#[doc = $cmnt:literal])*
-            (
-                $($lhs:tt)*
-            ) => $rhs:tt $($remaining:tt)*
+            #[fake]
+            $($remaining:tt)*
         }
-        $(@pre_flags {$($pre_flags:tt)*})?
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
-        $crate::_remove_flag_bindings! {
+        $crate::_filter_hidden_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                attrs: {$($($attrs)*)?}
+                hidden: $($($hidden)?)?
+            }
             {$($remaining)*}
-            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $($hidden:ident)?
+        })?
+        {
+            #[doc = $cmt:literal]
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_hidden_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                attrs: {$($($attrs)*)? #[doc = $cmt]}
+                hidden: $($($hidden)?)?
+            }
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $($hidden:ident)?
+        })?
+        {
+            #[$($attr:tt)*]
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        compile_error!(::core::concat!("Invalid flag attribute #[", ::core::stringify!($($attr)*), "]"))
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $($hidden:ident)?
+        })?
+        {
+            ($flag_binding:ident @ $($lhs:tt)*) => $rhs:tt
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_hidden_flags! {
+            @{
+                pre_flags: {$($($pre_flags)* $($attrs)*)? ($($lhs)*) => $rhs}
+                attrs: {}
+                hidden:
+            }
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden:
+        })?
+        {
+            ($($lhs:tt)*) => $rhs:tt
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_hidden_flags! {
+            @{
+                pre_flags: {$($($pre_flags)* $($attrs)*)? ($($lhs)*) => $rhs}
+                attrs: {}
+                hidden:
+            }
+            {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        $(@{
+            pre_flags: {$($pre_flags:tt)*}
+            attrs: {$($attrs:tt)*}
+            hidden: $hidden:ident
+        })?
+        {
+            ($($lhs:tt)*) => $rhs:tt
+            $($remaining:tt)*
+        }
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_filter_hidden_flags! {
+            @{
+                pre_flags: {$($($pre_flags)*)?}
+                attrs: {}
+                hidden:
+            }
+            {$($remaining)*}
             $local_macro_to_call!($($other_args)*)
         }
     };
