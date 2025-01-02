@@ -44,8 +44,12 @@
 //!         }
 //!
 //!         /// Sets the output file path.
-//!         ("--output" | "-o", output_path) => {
-//!             output_path_ = output_path;
+//!         (flag @ "--output" | "-o", output_path) => {
+//!             let Some(output_path) = output_path else {
+//!                 return Err(format!("Expected path after `{flag}`"));
+//!             };
+//!
+//!             output_path_ = Some(output_path);
 //!         }
 //!
 //!         /// Adds a file as an input.
@@ -278,7 +282,7 @@ macro_rules! _parse_items {
             $flags {
                 $($prev)*
                 $(#[$attr])*
-                $vis const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _constant_expression!($($macro)::+ ! $mac_args));
+                $vis const $constant_name: $constant_type = $crate::_filter_hidden_flags!($flags _remove_flag_bindings!(_constant_expression!($($macro)::+ ! $mac_args)));
             }
             $($rem)*
         }

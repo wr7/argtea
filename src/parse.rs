@@ -194,6 +194,11 @@ macro_rules! _create_branch_pat {
         _
     };
     {
+        ($flag_var:ident @ $($flag:literal)|+ $(, $param:ident)* $(,)? )
+    } => {
+        $($flag_var @ $flag)|+
+    };
+    {
         ($($flag:literal)|+ $(, $param:ident)* $(,)? )
     } => {
         $($flag)|+
@@ -210,7 +215,7 @@ macro_rules! _create_branch{
         $block
     }};
     {
-        $iter:ident $string:ident ($($flag:literal)|+ $(, $param:ident)* $(,)? ) => $block:block
+        $iter:ident $string:ident ($($flag_var:ident @)? $($flag:literal)|+ $(, $param:ident)* $(,)? ) => $block:block
     } => {{
         $(let $param = $iter.next();)*
         $block

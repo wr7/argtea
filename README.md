@@ -44,8 +44,12 @@ argtea_impl! {
         }
 
         /// Sets the output file path.
-        ("--output" | "-o", output_path) => {
-            output_path_ = output_path;
+        (flag @ "--output" | "-o", output_path) => {
+            let Some(output_path) = output_path else {
+                return Err(format!("Expected path after `{flag}`"));
+            };
+
+            output_path_ = Some(output_path);
         }
 
         /// Adds a file as an input.

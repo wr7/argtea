@@ -13,10 +13,18 @@ argtea_impl! {
 
         ("--warning" | "-W", warning) => {
             let Some(warning) = warning else {
-                panic!("expected parameter for `-W`")
+                panic!("expected parameter for warning flag")
             };
 
             warning_ = Some(warning);
+        }
+
+        (flag_name @ "--weird-flag" | "-f", p) => {
+            let Some(p) = p else {
+                panic!("expected parameter for `{flag_name}`")
+            };
+
+            warning_ = Some(format!("{flag_name} {p}"));
         }
 
         (other) => {
@@ -46,19 +54,21 @@ argtea_impl! {
 
 #[test]
 fn test_a() {
-    let tests: &[&[&str]] = &[
-        &["-W", "all"],
-        &["-aW", "all"],
-        &["--warning", "all"],
-        &["--warning=all"],
-        &["-Wall"],
-        &["-aWall"],
+    let tests: &[(&[&str], &str)] = &[
+        (&["-W", "all"], "all"),
+        (&["-aW", "all"], "all"),
+        (&["--warning", "all"], "all"),
+        (&["--warning=all"], "all"),
+        (&["-Wall"], "all"),
+        (&["-aWall"], "all"),
+        (&["-f", "abc"], "-f abc"),
+        (&["--weird-flag", "def"], "--weird-flag def"),
     ];
 
-    for test in tests {
+    for (test, expected) in tests {
         let args: Vec<String> = test.iter().map(|a| a.to_string()).collect();
 
         let result = TestA::parse(args);
-        assert_eq!(result.warning.as_deref(), Some("all"));
+        assert_eq!(result.warning.as_deref(), Some(*expected));
     }
 }

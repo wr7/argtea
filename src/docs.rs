@@ -118,7 +118,7 @@ macro_rules! _filter_hidden_flags {
         {}
         $local_macro_to_call:ident!($($other_args:tt)*)
     } => {
-        $crate::$local_macro_to_call!({$($($pre_flags)*)?} $($other_args)*)
+        $crate::$local_macro_to_call!{{$($($pre_flags)*)?} $($other_args)*}
     };
 
     {
@@ -141,6 +141,67 @@ macro_rules! _filter_hidden_flags {
         $crate::_filter_hidden_flags! {
             @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
             {$($remaining)*}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+}
+
+/// Helper macro: removes all 'flag_name @' from the lhs of all flag declarations and then calls the
+/// provided macro with the filtered flags as the first argument.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _remove_flag_bindings {
+    {
+        {}
+        $(@pre_flags {$($pre_flags:tt)*})?
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::$local_macro_to_call!{{$($($pre_flags)*)?} $($other_args)*}
+    };
+
+    {
+        { #[hidden] ($($lhs:tt)*) => $rhs:tt $($remaining:tt)* }
+        $(@pre_flags {$($pre_flags:tt)*})?
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_remove_flag_bindings! {
+            {$($remaining)*}
+            @pre_flags {$($($pre_flags)*)?}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        {
+            $(#[doc = $cmnt:literal])*
+            (
+                $variable_name:ident @ $($lhs:tt)*
+            ) => $rhs:tt
+            $($remaining:tt)*
+        }
+        $(@pre_flags {$($pre_flags:tt)*})?
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_remove_flag_bindings! {
+            {$($remaining)*}
+            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
+            $local_macro_to_call!($($other_args)*)
+        }
+    };
+
+    {
+        {
+            $(#[doc = $cmnt:literal])*
+            (
+                $($lhs:tt)*
+            ) => $rhs:tt $($remaining:tt)*
+        }
+        $(@pre_flags {$($pre_flags:tt)*})?
+        $local_macro_to_call:ident!($($other_args:tt)*)
+    } => {
+        $crate::_remove_flag_bindings! {
+            {$($remaining)*}
+            @pre_flags {$($($pre_flags)*)? $(#[doc = $cmnt])* ($($lhs)*) => $rhs}
             $local_macro_to_call!($($other_args)*)
         }
     };
